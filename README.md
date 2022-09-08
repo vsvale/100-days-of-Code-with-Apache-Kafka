@@ -47,3 +47,72 @@
 - get your api key and secret put it in config.ini
 - `chmod +x consumer.py`
 - `./consumer.py config.ini`
+
+## Hands On Kafka Connect
+- Add Connector use Datagen to topic inventory serielize it in JSON
+- `confluent kafka topic consume --from-beginning inventory`
+- for Postgresql source you can try use this open rdb:
+```
+    HOST: psql-mock-database-cloud.postgres.database.azure.com
+    PORT: 5432
+    USERNAME: ghqebhyocdpebafjqlsptgcd@psql-mock-database-cloud
+    PASSWORD: bqjhfgeynzgmftcmbwsmpnuq
+    DATABASE: booking1659905721422xwjeapkgjlhjepbc
+    TABLES: appartments,bookings,company,users
+````
+
+## Hands On Confluent Schema Registry
+- Enable Schema Registry
+- Add Connector use Datagen to topic orders serielize it in Avro
+- `confluent kafka topic consume --from-beginning orders`
+- `confluent kafka topic consume --value-format avro --srt-api-key ********* --sr-api-secret ************************* orders`
+
+## Hands On KsqlDB
+- Create ksqldb cluster then
+```
+CREATE STREAM orders_stream WITH (
+  KAFKA_TOPIC='orders', 
+  VALUE_FORMAT='AVRO',
+  PARTITIONS=6,
+  TIMESTAMP='ordertime');
+```
+```
+SELECT 
+    TIMESTAMPTOSTRING(ORDERTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS ORDERTIME_FORMATTED,
+    orderid,
+    itemid,
+    orderunits,
+    address->city, 
+    address->state,
+    address->zipcode 
+from ORDERS_STREAM;
+```
+- Stream from select
+```
+CREATE STREAM ORDERS_STREAM_TS AS
+SELECT 
+    TIMESTAMPTOSTRING(ORDERTIME, 'yyyy-MM-dd HH:mm:ss.SSS') AS ORDERTIME_FORMATTED,
+    orderid,
+    itemid,
+    orderunits,
+    address->city, 
+    address->state,
+    address->zipcode 
+from ORDERS_STREAM;
+```
+- Table to agg
+```
+CREATE TABLE STATE_COUNTS AS 
+SELECT 
+  address->state,
+  COUNT_DISTINCT(ORDERID) AS DISTINCT_ORDERS
+FROM ORDERS_STREAM
+WINDOW TUMBLING (SIZE 7 DAYS) 
+GROUP BY address->state;
+```
+```
+SELECT
+    *
+FROM STATE_COUNTS
+WHERE DISTINCT_ORDERS > 2;
+```
