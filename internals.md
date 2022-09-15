@@ -1,0 +1,3 @@
+- Create topic perf-test-topic  withh 4 partitions
+- Configure a client, create kafka cluster api key e SR key
+- 
